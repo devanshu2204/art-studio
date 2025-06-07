@@ -14,7 +14,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   // For unsupported methods, also send JSON
-  res.setHeader('Allow', ['POST']);
+  res.status(400).json({ error: "Bad request" }); // instead of res.status(400).end()
   return res.status(405).json({ error: `Method ${req.method} not allowed` });
 }
 
