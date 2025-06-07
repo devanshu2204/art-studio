@@ -31,84 +31,91 @@ const Contact = () => {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const currentTime = Date.now();
-    if (currentTime - lastSubmissionTime < RATE_LIMIT_DELAY) {
-      toast({
-        title: "Too many requests",
-        description: "Please wait before submitting another message.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const currentTime = Date.now();
+  if (currentTime - lastSubmissionTime < RATE_LIMIT_DELAY) {
+    toast({
+      title: "Too many requests",
+      description: "Please wait before submitting another message.",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
+  if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+    toast({
+      title: "Missing fields",
+      description: "Please fill in all required fields.",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    if (!isValidEmail(formData.email)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive"
-      });
-      return;
-    }
+  if (!isValidEmail(formData.email)) {
+    toast({
+      title: "Invalid email",
+      description: "Please enter a valid email address.",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    if (formData.message.length < 10) {
-      toast({
-        title: "Message too short",
-        description: "Please provide a more detailed message.",
-        variant: "destructive"
-      });
-      return;
-    }
+  if (formData.message.length < 10) {
+    toast({
+      title: "Message too short",
+      description: "Please provide a more detailed message.",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    const sanitizedData = {
-      name: sanitizeInput(formData.name),
-      email: sanitizeInput(formData.email),
-      subject: sanitizeInput(formData.subject),
-      message: sanitizeInput(formData.message)
-    };
+  const sanitizedData = {
+    name: sanitizeInput(formData.name),
+    email: sanitizeInput(formData.email),
+    subject: sanitizeInput(formData.subject),
+    message: sanitizeInput(formData.message)
+  };
 
-    try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sanitizedData)
-      });
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sanitizedData)
+    });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Something went wrong');
+    if (!res.ok) {
+      let errorData = {};
+      try {
+        errorData = await res.json(); // Try to parse JSON
+      } catch {
+        // If response body is empty, skip parsing
       }
 
-      setLastSubmissionTime(currentTime);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      toast({
-        title: "Message sent!",
-        description: "Thank you for your message. I will get back to you soon."
-      });
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong. Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
+      const errorMessage = (errorData as any).error || 'Something went wrong. Please try again later.';
+      throw new Error(errorMessage);
     }
-  };
+
+    setLastSubmissionTime(currentTime);
+    setFormData({ name: '', email: '', subject: '', message: '' });
+    toast({
+      title: "Message sent!",
+      description: "Thank you for your message. I will get back to you soon."
+    });
+  } catch (error: any) {
+    console.error('Error sending message:', error);
+    toast({
+      title: "Error",
+      description: error.message || "Something went wrong. Please try again later.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
