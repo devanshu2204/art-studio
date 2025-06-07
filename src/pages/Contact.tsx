@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,27 +17,23 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmissionTime, setLastSubmissionTime] = useState(0);
 
-  // Rate limiting: prevent rapid form submissions
-  const RATE_LIMIT_DELAY = 30000; // 30 seconds
+  const RATE_LIMIT_DELAY = 30000;
 
-  // Input sanitization function
   const sanitizeInput = (input: string): string => {
     return input
-      .replace(/[<>]/g, '') // Remove potential XSS characters
+      .replace(/[<>]/g, '')
       .trim()
-      .slice(0, 1000); // Limit input length
+      .slice(0, 1000);
   };
 
-  // Email validation
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Rate limiting check
+
     const currentTime = Date.now();
     if (currentTime - lastSubmissionTime < RATE_LIMIT_DELAY) {
       toast({
@@ -49,7 +44,6 @@ const Contact = () => {
       return;
     }
 
-    // Input validation
     if (!formData.name || !formData.email || !formData.subject || !formData.message) {
       toast({
         title: "Missing fields",
@@ -78,8 +72,7 @@ const Contact = () => {
     }
 
     setIsSubmitting(true);
-    
-    // Sanitize all inputs
+
     const sanitizedData = {
       name: sanitizeInput(formData.name),
       email: sanitizeInput(formData.email),
@@ -87,32 +80,46 @@ const Contact = () => {
       message: sanitizeInput(formData.message)
     };
 
-    console.log('Secure form submission:', sanitizedData);
-    
-    // Simulate processing time
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sanitizedData)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Something went wrong');
+      }
+
       setLastSubmissionTime(currentTime);
       setFormData({ name: '', email: '', subject: '', message: '' });
-      
       toast({
         title: "Message sent!",
         description: "Thank you for your message. I will get back to you soon."
       });
-    }, 1000);
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: sanitizeInput(value)
+      [name]: value
     });
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="bg-gallery-cream py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="font-display text-5xl md:text-6xl font-bold text-foreground mb-4">
@@ -126,7 +133,6 @@ const Contact = () => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Contact Form */}
           <div className="lg:col-span-2">
             <Card className="shadow-lg">
               <CardHeader>
@@ -166,7 +172,7 @@ const Contact = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="subject">Subject *</Label>
                     <Input
@@ -181,7 +187,7 @@ const Contact = () => {
                       disabled={isSubmitting}
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="message">Message *</Label>
                     <Textarea
@@ -200,11 +206,11 @@ const Contact = () => {
                       {formData.message.length}/2000 characters
                     </p>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    size="lg" 
-                    className="w-full" 
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Sending...' : 'Send Message'}
@@ -214,7 +220,6 @@ const Contact = () => {
             </Card>
           </div>
 
-          {/* Contact Information */}
           <div className="space-y-6">
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground mb-4">
@@ -232,7 +237,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Email</p>
-                  <p className="text-muted-foreground text-sm">hello@artist.com</p>
+                  <p className="text-muted-foreground text-sm">devanshu.debu2004@gmail.com</p>
                 </div>
               </div>
 
@@ -242,7 +247,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Phone</p>
-                  <p className="text-muted-foreground text-sm">+1 (555) 123-4567</p>
+                  <p className="text-muted-foreground text-sm">+91 96438902</p>
                 </div>
               </div>
 
@@ -251,8 +256,8 @@ const Contact = () => {
                   <MapPin size={18} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Studio</p>
-                  <p className="text-muted-foreground text-sm">New York, NY</p>
+                  <p className="font-medium text-foreground">Location</p>
+                  <p className="text-muted-foreground text-sm">New Delhi, India</p>
                 </div>
               </div>
             </div>
