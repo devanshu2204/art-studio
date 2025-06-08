@@ -1,20 +1,35 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { VercelRequest, VercelResponse } from "@vercel/node";
+import nodemailer from "nodemailer";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    const { name, email, subject, message } = req.body;
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-    if (!name || !email || !subject || !message) {
-      return res.status(400).json({ error: 'All fields are required.' });
-    }
+  const { name, email, subject, message } = req.body;
 
-    console.log('Message received:', { name, email, subject, message });
+  if (!name || !email || !subject || !message) {
+    return res.status(400).json({ error: "Missing fields." });
+  }
 
-    // Here you could send an email or store it in a database
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
 
-    return res.status(200).json({ success: true, message: 'Message received successfully!' });
-  } else {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ error: `Method ${req.method} not allowed` });
+  try {
+    await transporter.sendMail({
+      from: email,
+      to: process.env.EMAIL_USER,
+      subject: `New message from ${name}: ${subject}`,
+      text: message,
+    });
+    return res.status(200).json({ message: "Email sent successfully!" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to send email." });
   }
 }
